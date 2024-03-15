@@ -93,14 +93,11 @@ public class FtpStorageServiceImpl implements FileStorageService {
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 
             String path = "/" + "ftp" + "/" + "user";
-            System.out.println(directory.length);
 
             for (int i = 0; i < directory.length; i ++){
 
                 path += "/" + directory[i];
             }
-
-            System.out.println("CIAOOOO "  + path);
 
             InputStream inputStream = ftpClient.retrieveFileStream(path);
             try {
