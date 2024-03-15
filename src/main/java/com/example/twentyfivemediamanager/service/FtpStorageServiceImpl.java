@@ -2,17 +2,12 @@ package com.example.twentyfivemediamanager.service;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
-import org.apache.tomcat.util.http.fileupload.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.UUID;
 
 @Service
 public class FtpStorageServiceImpl implements FileStorageService {
@@ -31,7 +26,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
 
     @Override
-    public String storeFile(String appId, String userId, String category, MultipartFile file) {
+    public String storeFile(String[] directory, MultipartFile file) {
         FTPClient ftpClient = new FTPClient();
 
         try {
@@ -39,38 +34,39 @@ public class FtpStorageServiceImpl implements FileStorageService {
             ftpClient.login(username, password);
             ftpClient.enterLocalPassiveMode();
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+            ftpClient.changeWorkingDirectory("ftp");
+            ftpClient.changeWorkingDirectory("user");
+            String fileName =  "_" + file.getOriginalFilename();
+            String path = "/" + "ftp" + "/" + "user";
 
-            String fileName = appId + "/" + userId + "/" + category + "/" + UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-            String directory = "/" + appId + "/" + userId + "/" + category;
+            for (int i = 0; i < directory.length; i ++){
+                path += "/" + directory[i];
+                ftpClient.makeDirectory(path);
+            }
 
-            System.out.println("Directory :" + directory);
+            boolean directoryCreated = ftpClient.makeDirectory(path);
+            System.out.println("Directory creata: " + directoryCreated);
+            if (directoryCreated) {
+                System.out.println("Nuova directory creata con successo: nuovaDirectory");
+            } else {
+                System.out.println("Directory esistente");
+            }
 
-            if (!ftpClient.changeWorkingDirectory(directory)) {
+            if (!ftpClient.changeWorkingDirectory(path)) {
                 System.out.println("Directory not found, creating: " + directory);
-                if (!ftpClient.makeDirectory(directory)) {
+                if (!ftpClient.makeDirectory(path)) {
                     System.out.println("Failed to create directory: " + directory);
                     return "false";
                 }
             }
 
-            // Leggi i dati dal MultipartFile in un ByteArrayOutputStream
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            IOUtils.copy(file.getInputStream(), outputStream);
-            outputStream.close();
-
-            // Crea un ByteArrayInputStream dai dati letti
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-
             // Salva il file sul server FTP
-            boolean success = ftpClient.storeFile(fileName, inputStream);
+            boolean success = ftpClient.storeFile(fileName, file.getInputStream());
             if (success) {
                 System.out.println("File stored successfully: " + fileName);
             } else {
                 System.out.println("Failed to store file: " + fileName);
             }
-
-            // Chiudi il ByteArrayInputStream
-            inputStream.close();
 
             return "success";
         } catch (IOException e) {
@@ -87,19 +83,26 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
 
     @Override
-    public Resource loadFileAsResource(String appId, String userId, String category, String fileName) {
+    public Resource loadFileAsResource(String[] directory, String fileName) {
         FTPClient ftpClient = new FTPClient();
+
         try  {
             ftpClient.connect(server, port);
             ftpClient.login(username, password);
             ftpClient.enterLocalPassiveMode();
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-            System.out.println("APPID :" + userId + " " + category + " " + fileName);
 
+            String path = "/" + "ftp" + "/" + "user";
+            System.out.println(directory.length);
 
-            String filePath = "/" + appId + "/" + userId + "/" + category + "/" + fileName;
+            for (int i = 0; i < directory.length; i ++){
 
-            InputStream inputStream = ftpClient.retrieveFileStream(filePath);
+                path += "/" + directory[i];
+            }
+
+            System.out.println("CIAOOOO "  + path);
+
+            InputStream inputStream = ftpClient.retrieveFileStream(path);
             try {
                 if (inputStream == null) {
                     throw new FileNotFoundException("File not found: " + fileName);
