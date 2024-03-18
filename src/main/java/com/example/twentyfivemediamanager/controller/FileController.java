@@ -18,12 +18,13 @@ public class FileController {
     @Autowired
     private FileStorageService fileStorageService;
 
-    @GetMapping("/download/{path}/{fileName}/**")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String path, @PathVariable String fileName, HttpServletRequest request) {
+    @GetMapping("/download/{path}/**")
+    public ResponseEntity<Resource> downloadFile(@PathVariable String path, HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
             String[] pathSegments = fullPath.split("/");
             String[] additionalPathSegments = Arrays.copyOfRange(pathSegments, 3, pathSegments.length);
+            String fileName = pathSegments[pathSegments.length-1];
             Resource resource = fileStorageService.loadFileAsResource(additionalPathSegments, fileName);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
