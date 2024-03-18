@@ -18,14 +18,13 @@ public class FileController {
     @Autowired
     private FileStorageService fileStorageService;
 
-    @GetMapping("/download/{path}/**")
+    @GetMapping("/downloadkkk/{path}/**")
     public ResponseEntity<Resource> downloadFile(@PathVariable String path, HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
-            String[] pathSegments = fullPath.split("/");
-            String[] additionalPathSegments = Arrays.copyOfRange(pathSegments, 3, pathSegments.length);
+            String[] pathSegments = fullPath.split("/downloadkkk/");
             String fileName = pathSegments[pathSegments.length-1];
-            Resource resource = fileStorageService.loadFileAsResource(additionalPathSegments, fileName);
+            Resource resource = fileStorageService.loadFileAsResource(fileName);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                     .body(resource);
@@ -35,13 +34,13 @@ public class FileController {
         }
     }
 
-    @PostMapping("/upload/{path}/**")
+    @PostMapping("/uploadkkk/{path}/**")
     public ResponseEntity<String> getElements(@PathVariable String path, @RequestParam("file") MultipartFile file, HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
-            String[] pathSegments = fullPath.split("/");
-            String[] additionalPathSegments = Arrays.copyOfRange(pathSegments, 3, pathSegments.length);
-            String fileName = fileStorageService.storeFile(additionalPathSegments, file);
+            String[] pathSegments = fullPath.split("/uploadkkk/");
+            String[] allStrings = pathSegments[1].split("/");
+            String fileName = fileStorageService.storeFile(allStrings, file);
             return ResponseEntity.ok().body(fileName);
         }
         catch (Exception exception){

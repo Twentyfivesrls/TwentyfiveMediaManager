@@ -83,7 +83,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
 
     @Override
-    public Resource loadFileAsResource(String[] directory, String fileName) {
+    public Resource loadFileAsResource(String fileName) {
         FTPClient ftpClient = new FTPClient();
 
         try  {
@@ -92,12 +92,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
             ftpClient.enterLocalPassiveMode();
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 
-            String path = "/" + "ftp" + "/" + "user";
-
-            for (int i = 0; i < directory.length; i ++){
-
-                path += "/" + directory[i];
-            }
+            String path = "/" + "ftp" + "/" + "user" + "/" + fileName;
 
             InputStream inputStream = ftpClient.retrieveFileStream(path);
             try {
