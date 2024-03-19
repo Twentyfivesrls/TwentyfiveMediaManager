@@ -39,6 +39,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
             String fileName =  "_" + file.getOriginalFilename();
             String path = "/" + "ftp" + "/" + "user";
 
+
             for (int i = 0; i < directory.length; i ++){
                 path += "/" + directory[i];
                 ftpClient.makeDirectory(path);
