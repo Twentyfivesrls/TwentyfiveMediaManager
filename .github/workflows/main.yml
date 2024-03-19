@@ -2,10 +2,11 @@ name: deploy
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-deploy:
+    # if: ${{ false }} # this record is to be used to disable the deploy job and use only the sonar-gate job
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -13,8 +14,15 @@ jobs:
         with:
           distribution: 'adopt'
           java-version: '17'
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
-      - uses: s4u/maven-settings-action@v2.8.0
+      - name: Add maven settings for GitHub packages
+        uses: s4u/maven-settings-action@v2.8.0
         with:
           servers: '[{"id": "github", "username": "${{secrets.SSH_USERNAME}}", "password": "${{secrets.SSH_GITHUB_TOKEN}}"}]'
 
