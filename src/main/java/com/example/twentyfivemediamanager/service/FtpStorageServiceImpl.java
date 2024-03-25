@@ -111,13 +111,12 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
     //FTPS
     @Override
-    public String storeFile(String[] directory, MultipartFile file) {
+    public String storeFile(String[] directory, MultipartFile file) throws IOException {
         FTPSClient ftpsClient = new FTPSClient(); // Usa FTPSClient invece di FTPClient
 
         try {
             ftpsClient.connect(server, port);
             ftpsClient.login(username, password);
-            ftpsClient.enterLocalPassiveMode();
             ftpsClient.setFileType(FTP.BINARY_FILE_TYPE);
             ftpsClient.execPBSZ(0); // Aggiungi questo per supportare la sicurezza
             ftpsClient.execPROT("P"); // Aggiungi questo per supportare la sicurezza
@@ -157,7 +156,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
             return "success";
         } catch (IOException e) {
-            throw new RuntimeException("Failed to store file on FTPS server", e);
+            //throw new RuntimeException("Failed to store file on FTPS server", e);
+            throw e;
         } finally {
             try {
                 ftpsClient.logout();
@@ -170,7 +170,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
 
     @Override
-    public Resource loadFileAsResource(String fileName) {
+    public Resource loadFileAsResource(String fileName) throws IOException {
         FTPSClient ftpsClient = new FTPSClient(); // Usa FTPSClient invece di FTPClient
 
         try {
@@ -193,7 +193,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 ftpsClient.logout();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load file from FTPS server", e);
+            //throw new RuntimeException("Failed to load file from FTPS server", e);
+            throw e;
         }
     }
 
