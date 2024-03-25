@@ -23,8 +23,6 @@ public class FileController {
     public ResponseEntity<Resource> downloadFile(@PathVariable String path, HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
-            System.out.println("SONO QUI controller : " + fullPath);
-
             String[] pathSegments = fullPath.split("/downloadkkk/");
             String fileName = pathSegments[pathSegments.length-1];
             Resource resource = fileStorageService.loadFileAsResource(fileName);
@@ -41,8 +39,6 @@ public class FileController {
     public ResponseEntity<String> getElements(@PathVariable String path, @RequestParam("file") MultipartFile file, HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
-            System.out.println("SONO QUI controllerUpload : " + file);
-
             String[] pathSegments = fullPath.split("/uploadkkk/");
             String[] allStrings = pathSegments[1].split("/");
             String fileName = fileStorageService.storeFile(allStrings, file);
