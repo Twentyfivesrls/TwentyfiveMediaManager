@@ -12,6 +12,7 @@ import org.springframework.core.io.Resource;
 
 
 @RestController
+@CrossOrigin("*")
 @RequestMapping("/twentyfiveserver")
 public class FileController {
 
