@@ -2,6 +2,7 @@ package com.example.twentyfivemediamanager.service;
 
 import org.apache.commons.net.ftp.FTP;
 
+import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPSClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
@@ -26,7 +27,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
     private String password;
 
     //FTP
-   /* @Override
+    @Override
     public String storeFile(String[] directory, MultipartFile file) {
         FTPClient ftpClient = new FTPClient();
 
@@ -107,10 +108,10 @@ public class FtpStorageServiceImpl implements FileStorageService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to load file from FTP server", e);
         }
-    }*/
+    }
 
     //FTPS
-    @Override
+   /* @Override
     public String storeFile(String[] directory, MultipartFile file) throws IOException {
         FTPSClient ftpsClient = new FTPSClient(); // Usa FTPSClient invece di FTPClient
 
@@ -201,7 +202,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
             //throw new RuntimeException("Failed to load file from FTPS server", e);
             throw e;
         }
-    }
+    }*/
 
 }
 
