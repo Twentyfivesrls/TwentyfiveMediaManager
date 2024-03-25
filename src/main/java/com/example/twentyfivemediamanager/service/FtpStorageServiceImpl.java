@@ -1,7 +1,8 @@
 package com.example.twentyfivemediamanager.service;
 
 import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
+
+import org.apache.commons.net.ftp.FTPSClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -24,8 +25,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
     @Value("${ftp.password}")
     private String password;
 
-
-    @Override
+    //FTP
+   /* @Override
     public String storeFile(String[] directory, MultipartFile file) {
         FTPClient ftpClient = new FTPClient();
 
@@ -106,6 +107,95 @@ public class FtpStorageServiceImpl implements FileStorageService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to load file from FTP server", e);
         }
+    }*/
+
+    //FTPS
+    @Override
+    public String storeFile(String[] directory, MultipartFile file) {
+        FTPSClient ftpsClient = new FTPSClient(); // Usa FTPSClient invece di FTPClient
+
+        try {
+            ftpsClient.connect(server, port);
+            ftpsClient.login(username, password);
+            ftpsClient.enterLocalPassiveMode();
+            ftpsClient.setFileType(FTP.BINARY_FILE_TYPE);
+            ftpsClient.execPBSZ(0); // Aggiungi questo per supportare la sicurezza
+            ftpsClient.execPROT("P"); // Aggiungi questo per supportare la sicurezza
+            ftpsClient.changeWorkingDirectory("ftp");
+            ftpsClient.changeWorkingDirectory("user");
+            String fileName = "_" + file.getOriginalFilename();
+            String path = "/" + "ftp" + "/" + "user";
+
+            for (int i = 0; i < directory.length; i++) {
+                path += "/" + directory[i];
+                ftpsClient.makeDirectory(path);
+            }
+
+            boolean directoryCreated = ftpsClient.makeDirectory(path);
+            System.out.println("Directory creata: " + directoryCreated);
+            if (directoryCreated) {
+                System.out.println("Nuova directory creata con successo: nuovaDirectory");
+            } else {
+                System.out.println("Directory esistente");
+            }
+
+            if (!ftpsClient.changeWorkingDirectory(path)) {
+                System.out.println("Directory not found, creating: " + directory);
+                if (!ftpsClient.makeDirectory(path)) {
+                    System.out.println("Failed to create directory: " + directory);
+                    return "false";
+                }
+            }
+
+            // Salva il file sul server FTPS
+            boolean success = ftpsClient.storeFile(fileName, file.getInputStream());
+            if (success) {
+                System.out.println("File stored successfully: " + fileName);
+            } else {
+                System.out.println("Failed to store file: " + fileName);
+            }
+
+            return "success";
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store file on FTPS server", e);
+        } finally {
+            try {
+                ftpsClient.logout();
+                ftpsClient.disconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
+
+
+    @Override
+    public Resource loadFileAsResource(String fileName) {
+        FTPSClient ftpsClient = new FTPSClient(); // Usa FTPSClient invece di FTPClient
+
+        try {
+            ftpsClient.connect(server, port);
+            ftpsClient.login(username, password);
+            ftpsClient.enterLocalPassiveMode();
+            ftpsClient.setFileType(FTP.BINARY_FILE_TYPE);
+            ftpsClient.execPBSZ(0); // Aggiungi questo per supportare la sicurezza
+            ftpsClient.execPROT("P"); // Aggiungi questo per supportare la sicurezza
+
+            String path = "/" + "ftp" + "/" + "user" + "/" + fileName;
+
+            InputStream inputStream = ftpsClient.retrieveFileStream(path);
+            try {
+                if (inputStream == null) {
+                    throw new FileNotFoundException("File not found: " + fileName);
+                }
+                return new InputStreamResource(inputStream);
+            } finally {
+                ftpsClient.logout();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load file from FTPS server", e);
+        }
+    }
+
 }
 
