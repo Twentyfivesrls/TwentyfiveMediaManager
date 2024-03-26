@@ -104,6 +104,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 return new InputStreamResource(inputStream);
             } finally {
                 ftpClient.logout();
+                ftpClient.disconnect();
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to load file from FTP server", e);
