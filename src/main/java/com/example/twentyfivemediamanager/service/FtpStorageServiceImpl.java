@@ -72,7 +72,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 System.out.println("Failed to store file: " + fileName);
             }
 
-            return "success";
+            return fileName;
         } catch (IOException e) {
             throw new RuntimeException("Failed to store file on FTP server", e);
         } finally {
