@@ -10,6 +10,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
+import java.util.UUID;
 
 @Service
 public class FtpStorageServiceImpl implements FileStorageService {
@@ -38,7 +39,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
             ftpClient.changeWorkingDirectory("ftp");
             ftpClient.changeWorkingDirectory("user");
-            String fileName =  "_" + file.getOriginalFilename();
+            String fileName =  UUID.randomUUID().toString() +"_" + file.getOriginalFilename();
+
             String path = "/" + "ftp" + "/" + "user";
 
             for (int i = 0; i < directory.length; i ++){
