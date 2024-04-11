@@ -39,6 +39,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
             ftpClient.changeWorkingDirectory("ftp");
             ftpClient.changeWorkingDirectory("user");
             String fileName =  "_" + file.getOriginalFilename();
+            String fileNameSenzaSpazi = fileName.replaceAll("\\s", "");
             String path = "/" + "ftp" + "/" + "user";
 
             for (int i = 0; i < directory.length; i ++){
@@ -63,11 +64,11 @@ public class FtpStorageServiceImpl implements FileStorageService {
             }
 
             // Salva il file sul server FTP
-            boolean success = ftpClient.storeFile(fileName, file.getInputStream());
+            boolean success = ftpClient.storeFile(fileNameSenzaSpazi, file.getInputStream());
             if (success) {
-                System.out.println("File stored successfully: " + fileName);
+                System.out.println("File stored successfully: " + fileNameSenzaSpazi);
             } else {
-                System.out.println("Failed to store file: " + fileName);
+                System.out.println("Failed to store file: " + fileNameSenzaSpazi);
             }
 
             return "success";
