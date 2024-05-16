@@ -2,13 +2,17 @@ package com.example.twentyfivemediamanager.controller;
 
 import com.example.twentyfivemediamanager.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.catalina.webresources.FileResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 
+import java.util.Optional;
 
 
 @RestController
@@ -25,9 +29,16 @@ public class FileController {
             String fullPath = request.getRequestURI();
             String[] pathSegments = fullPath.split("/downloadkkk/");
             String fileName = pathSegments[pathSegments.length-1];
+            String[] dividedPath = fileName.split("/");
+            String finalFileName = dividedPath[dividedPath.length-1];
+            String[] dividedFileName = finalFileName.split("\\.");
+            String extension = dividedFileName[dividedFileName.length-1];
             Resource resource = fileStorageService.loadFileAsResource(fileName);
+            Optional<MediaType> mediaType = MediaTypeFactory.getMediaType(finalFileName);
+            MediaType resu = mediaType.orElse(MediaType.APPLICATION_OCTET_STREAM);
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .contentType(resu)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + finalFileName + "\"")
                     .body(resource);
         }catch (Exception exception) {
             exception.printStackTrace();

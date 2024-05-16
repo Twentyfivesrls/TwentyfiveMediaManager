@@ -4,6 +4,7 @@ import org.apache.commons.net.ftp.FTP;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPSClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -26,19 +27,21 @@ public class FtpStorageServiceImpl implements FileStorageService {
     @Value("${ftp.password}")
     private String password;
 
+
     //FTP
     @Override
     public String storeFile(String[] directory, MultipartFile file) {
         FTPClient ftpClient = new FTPClient();
 
         try {
+
             ftpClient.connect(server, port);
             ftpClient.login(username, password);
             ftpClient.enterLocalPassiveMode();
             ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
             ftpClient.changeWorkingDirectory("ftp");
             ftpClient.changeWorkingDirectory("user");
-            String fileName =  "_" + file.getOriginalFilename();
+            String fileName =  file.getOriginalFilename();
             String fileNameSenzaSpazi = fileName.replaceAll("\\s", "");
             String path = "/" + "ftp" + "/" + "user";
 
@@ -46,6 +49,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 path += "/" + directory[i];
                 ftpClient.makeDirectory(path);
             }
+
 
             boolean directoryCreated = ftpClient.makeDirectory(path);
             System.out.println("Directory creata: " + directoryCreated);
@@ -58,8 +62,6 @@ public class FtpStorageServiceImpl implements FileStorageService {
             if (!ftpClient.changeWorkingDirectory(path)) {
                 System.out.println("Directory not found, creating: " + directory);
                 if (!ftpClient.makeDirectory(path)) {
-                    ftpClient.logout();
-                    ftpClient.disconnect();
                     System.out.println("Failed to create directory: " + directory);
                     return "false";
                 }
@@ -75,7 +77,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
             return "success";
         } catch (IOException e) {
-
+            e.printStackTrace();
         } finally {
             try {
                 ftpClient.logout();
@@ -105,8 +107,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 if (inputStream == null) {
                     throw new FileNotFoundException("File not found: " + fileName);
                 }
-                ftpClient.logout();
-                ftpClient.disconnect();
+                InputStreamResource result = new InputStreamResource(inputStream);
                 return new InputStreamResource(inputStream);
             } finally {
                 ftpClient.logout();
