@@ -76,7 +76,6 @@ public class FtpStorageServiceImpl implements FileStorageService {
             return "success";
         } catch (IOException e) {
 
-            throw new RuntimeException("Failed to store file on FTP server", e);
         } finally {
             try {
                 ftpClient.logout();
@@ -113,7 +112,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 ftpClient.disconnect();
             }
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load file from FTP server", e);
+            ftpClient.logout();
+            ftpClient.disconnect();
         }
     }
 
