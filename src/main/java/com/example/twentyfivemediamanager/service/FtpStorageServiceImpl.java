@@ -77,7 +77,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
         } catch (IOException e) {
             ftpClient.logout();
             ftpClient.disconnect();
-            return "filed";
+            e.printStackTrace();
         } finally {
             try {
                 ftpClient.logout();
@@ -116,7 +116,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
         } catch (IOException e) {
             ftpClient.logout();
             ftpClient.disconnect();
-            return null;
+            e.printStackTrace();
         }
     }
 
