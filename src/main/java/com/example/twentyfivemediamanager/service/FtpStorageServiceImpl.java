@@ -86,7 +86,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 e.printStackTrace();
             }
         }
-        return;
+        return "false";
     }
 
 
@@ -119,7 +119,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
             ftpClient.disconnect();
             e.printStackTrace();
         }
-        return;
+        return null; 
     }
 
     //FTPS
