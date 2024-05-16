@@ -58,6 +58,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
             if (!ftpClient.changeWorkingDirectory(path)) {
                 System.out.println("Directory not found, creating: " + directory);
                 if (!ftpClient.makeDirectory(path)) {
+                    ftpClient.logout();
+                    ftpClient.disconnect();
                     System.out.println("Failed to create directory: " + directory);
                     return "false";
                 }
@@ -73,6 +75,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
 
             return "success";
         } catch (IOException e) {
+             ftpClient.logout();
+             ftpClient.disconnect();
             throw new RuntimeException("Failed to store file on FTP server", e);
         } finally {
             try {
@@ -102,12 +106,16 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 if (inputStream == null) {
                     throw new FileNotFoundException("File not found: " + fileName);
                 }
+                ftpClient.logout();
+                ftpClient.disconnect();
                 return new InputStreamResource(inputStream);
             } finally {
                 ftpClient.logout();
                 ftpClient.disconnect();
             }
         } catch (IOException e) {
+            ftpClient.logout();
+            ftpClient.disconnect();
             throw new RuntimeException("Failed to load file from FTP server", e);
         }
     }
