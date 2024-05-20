@@ -62,10 +62,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
             if (file.isEmpty()) {
                 throw new RuntimeException("Failed to store empty file.");
             }
-            Path destinationFile = this.rootLocation.resolve(
-                            Paths.get(path.toString()))
-                    .normalize()
-                    .toAbsolutePath();
+            Path destinationFile = Paths.get(this.rootLocation.toString(), path.toString());
             Files.createDirectories(destinationFile);
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
             return "OK";
