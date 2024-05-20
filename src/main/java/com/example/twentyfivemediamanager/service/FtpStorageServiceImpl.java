@@ -56,6 +56,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
         for (int i = 0; i < directory.length; i ++){
             path.append("/").append(directory[i]);
         }
+        path.append("/");
         path.append(file.getOriginalFilename());
         try {
             if (file.isEmpty()) {
