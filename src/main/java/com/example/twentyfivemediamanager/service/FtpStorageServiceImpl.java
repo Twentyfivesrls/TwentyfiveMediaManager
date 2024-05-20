@@ -65,6 +65,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
                             Paths.get(path.toString()))
                     .normalize()
                     .toAbsolutePath();
+            Files.createDirectories(destinationFile);
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
             return "OK";
         } catch (IOException e) {
