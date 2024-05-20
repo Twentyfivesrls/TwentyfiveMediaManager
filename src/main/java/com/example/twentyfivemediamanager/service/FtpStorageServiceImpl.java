@@ -8,9 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @Service
 public class FtpStorageServiceImpl implements FileStorageService {
@@ -27,9 +33,62 @@ public class FtpStorageServiceImpl implements FileStorageService {
     @Value("${ftp.password}")
     private String password;
 
+    private final Path rootLocation;
+
+
+
+    public FtpStorageServiceImpl(@Value("${file.storage.location}") String storageLocation) {
+        this.rootLocation = Paths.get(storageLocation);
+    }
+
+    // WITHOUT FTP
+    @Override
+    public void init() {
+        try {
+            Files.createDirectories(rootLocation);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not initialize storage", e);
+        }
+    }
+    @Override
+    public String storeFile(String[] directory, MultipartFile file) throws IOException {
+        StringBuilder path = new StringBuilder();
+        for (int i = 0; i < directory.length; i ++){
+            path.append("/").append(directory[i]);
+        }
+        try {
+            if (file.isEmpty()) {
+                throw new RuntimeException("Failed to store empty file.");
+            }
+            Path destinationFile = this.rootLocation.resolve(
+                            Paths.get(path.toString()))
+                    .normalize()
+                    .toAbsolutePath();
+            Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
+            return "OK";
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to store file.", e);
+        }
+    }
+
+    @Override
+    public Resource loadFileAsResource(String path) throws IOException {
+        try {
+            Path file = rootLocation.resolve(path);
+            Resource resource = new UrlResource(file.toUri());
+            if (resource.exists() || resource.isReadable()) {
+                return resource;
+            } else {
+                throw new RuntimeException("Could not read file: " + path);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Could not read file: " + path, e);
+        }
+    }
+
 
     //FTP
-    @Override
+ /*   @Override
     public String storeFile(String[] directory, MultipartFile file) {
         FTPClient ftpClient = new FTPClient();
 
@@ -114,10 +173,12 @@ public class FtpStorageServiceImpl implements FileStorageService {
                 ftpClient.disconnect();
             }
         } catch (IOException e) {
-
+            e.printStackTrace();
         }
         return null; 
     }
+ */
+
 
     //FTPS
    /* @Override
