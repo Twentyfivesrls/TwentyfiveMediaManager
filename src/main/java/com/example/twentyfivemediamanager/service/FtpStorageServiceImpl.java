@@ -1,18 +1,15 @@
 package com.example.twentyfivemediamanager.service;
 
-import org.apache.commons.net.ftp.FTP;
 
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPSClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -72,9 +69,10 @@ public class FtpStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public Resource loadFileAsResource(String path) throws IOException {
+    public Resource loadFileAsResource(String path) {
         try {
-            Path file = rootLocation.resolve(path);
+            String transformedPath = new java.net.URI(path).getPath();
+            Path file = rootLocation.resolve(transformedPath);
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return resource;
@@ -83,6 +81,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException("Could not read file: " + path, e);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
