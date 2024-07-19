@@ -54,12 +54,24 @@ public class FtpStorageServiceImpl implements FileStorageService {
             path.append("/").append(directory[i]);
         }
         path.append("/");
-        path.append(file.getOriginalFilename());
+        String transformedPath;
+        try {
+            transformedPath = new java.net.URI(path.toString()).getPath();
+
+        }catch(Exception e){
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+        StringBuilder newString = new StringBuilder();
+        newString.append(transformedPath);
+        newString.append(file.getOriginalFilename());
         try {
             if (file.isEmpty()) {
                 throw new RuntimeException("Failed to store empty file.");
             }
-            Path destinationFile = Paths.get(this.rootLocation.toString(), path.toString());
+
+
+            Path destinationFile = Paths.get(this.rootLocation.toString(), newString.toString());
             Files.createDirectories(destinationFile);
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
             return "OK";
