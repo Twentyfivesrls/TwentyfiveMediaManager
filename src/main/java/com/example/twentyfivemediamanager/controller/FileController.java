@@ -7,16 +7,15 @@ import com.example.twentyfivemediamanager.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.catalina.webresources.FileResource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.MediaTypeFactory;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.Optional;
 
 
@@ -54,44 +53,49 @@ public class FileController {
 
 
     @PostMapping("/uploadkkk/{path}/**")
-    public ResponseEntity<String> getElements(@PathVariable String path, @RequestParam("file") MultipartFile file, HttpServletRequest request) {
+    public ResponseEntity<String> uploadFile(@PathVariable String path, @RequestParam("file") MultipartFile file, HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
             String[] pathSegments = fullPath.split("/uploadkkk/");
             String[] allStrings = pathSegments[1].split("/");
             String fileName = fileStorageService.storeFile(allStrings, file);
             return ResponseEntity.ok().body(fileName);
-        } catch (IOException e) {
-            throw new FileUploadException("Failed to upload file: " + file.getOriginalFilename(), e);
-        } catch (Exception exception) {
-            throw new FileUploadException("Unexpected error occurred while uploading file: " + file.getOriginalFilename(), exception);
+        } catch (FileAlreadyExistsException e) {
+            // Gestione specifica del caso in cui il file esiste già
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        } catch (IOException | URISyntaxException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file: " + file.getOriginalFilename());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred while uploading file: " + file.getOriginalFilename());
         }
     }
+
 
 
 
 
     @DeleteMapping("/deletekkk/{path}/**")
     public ResponseEntity<String> deleteFile(@PathVariable String path, HttpServletRequest request) {
-        String fullPath = request.getRequestURI();
-        String[] pathSegments = fullPath.split("/deletekkk/");
-        String[] allStrings = pathSegments[1].split("/");
         try {
+            String fullPath = request.getRequestURI();
+            String[] pathSegments = fullPath.split("/deletekkk/");
+            String[] allStrings = pathSegments[1].split("/");
 
             // Chiamata al servizio per eliminare il file
             fileStorageService.deleteFile(allStrings);
             return ResponseEntity.ok().body("File deleted successfully");
         } catch (FileNotFoundException e) {
-            // Lancia un'eccezione specifica se il file non esiste
-            throw new FileDeleteException("File not found: " + String.join("/", allStrings), e);
+            // Restituisce un errore 404 se il file non è stato trovato
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found: " + path);
         } catch (IOException e) {
-            // Lancia un'eccezione specifica per problemi di accesso al filesystem
-            throw new FileDeleteException("Error deleting file: " + String.join("/", allStrings), e);
-        } catch (Exception exception) {
-            // Gestione generica per altri tipi di eccezioni
-            throw new FileDeleteException("Unexpected error occurred while deleting file: " + String.join("/", allStrings), exception);
+            // Restituisce un errore 500 per problemi legati al filesystem
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting file: " + path);
+        } catch (Exception e) {
+            // Restituisce un errore generico per altre eccezioni inattese
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred while deleting file: " + path);
         }
     }
+
 
 
 }

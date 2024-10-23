@@ -10,10 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 
 @Service
 public class FtpStorageServiceImpl implements FileStorageService {
@@ -54,11 +51,18 @@ public class FtpStorageServiceImpl implements FileStorageService {
         newString.append(transformedPath);
         newString.append(file.getOriginalFilename());
 
+        Path destinationFile = Paths.get(this.rootLocation.toString(), newString.toString());
+
+        // Verifica se il file esiste già
+        if (Files.exists(destinationFile)) {
+            throw new FileAlreadyExistsException("File already exists: " + destinationFile.toString());
+        }
+
         if (file.isEmpty()) {
             throw new IOException("Failed to store empty file.");
         }
 
-        Path destinationFile = Paths.get(this.rootLocation.toString(), newString.toString());
+        // Creazione della directory e copia del file
         Files.createDirectories(destinationFile.getParent());
         Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
         return "OK";
