@@ -50,6 +50,8 @@ public class FtpStorageServiceImpl implements FileStorageService {
             throw new RuntimeException("Could not initialize storage", e);
         }
     }
+
+
     @Override
     public String storeFile(String[] directory, MultipartFile file) throws IOException {
         StringBuilder path = new StringBuilder();
@@ -83,6 +85,23 @@ public class FtpStorageServiceImpl implements FileStorageService {
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException("Could not read file: " + path, e);
+        }
+    }
+
+    @Override
+    public void deleteFile(String[] directory) throws IOException {
+        StringBuilder path = new StringBuilder(rootLocation.toString());
+        for (String dir : directory) {
+            path.append("/").append(dir);
+        }
+
+        Path filePath = Paths.get(path.toString());
+
+        try {
+            Files.deleteIfExists(filePath);  // Elimina il file se esiste
+            System.out.println("File deleted successfully: " + filePath.toString());
+        } catch (IOException e) {
+            throw new IOException("Could not delete file: " + filePath.toString(), e);
         }
     }
 
