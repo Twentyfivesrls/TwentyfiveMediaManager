@@ -11,7 +11,7 @@ import java.net.URISyntaxException;
 public interface FileStorageService {
     String storeFile(String[] directory, MultipartFile file) throws IOException, URISyntaxException;
     Resource loadFileAsResource(String fileName) throws IOException, URISyntaxException;
-    void deleteFile(String[] allStrings) throws IOException;
+    void deleteFile(String[] allStrings) throws IOException, URISyntaxException;
 
     void init() throws IOException;
 
