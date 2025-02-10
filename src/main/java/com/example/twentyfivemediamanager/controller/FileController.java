@@ -14,6 +14,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Optional;
@@ -115,6 +117,7 @@ public class FileController {
     @GetMapping("/renamekkk")
     public ResponseEntity<String> renameFile(@RequestParam("source") String source, @RequestParam("target") String target, HttpServletRequest request) {
         try {
+            source = URLDecoder.decode(source, StandardCharsets.UTF_8);
             String[] sourceSplit = source.split("/");
             String[] targetSplit = target.split("/");
 
