@@ -16,6 +16,6 @@ public interface FileStorageService {
 
     void init() throws IOException;
 
-    List<String> getFiles(String path) throws URISyntaxException;
+    List<String> getFiles(String[] path) throws URISyntaxException;
 }
 

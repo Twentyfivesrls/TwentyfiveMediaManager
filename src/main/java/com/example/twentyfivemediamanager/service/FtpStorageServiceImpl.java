@@ -43,11 +43,10 @@ public class FtpStorageServiceImpl implements FileStorageService {
     }
 
     @Override
-    public List<String> getFiles(String path) throws URISyntaxException {
+    public List<String> getFiles(String[] directories) throws URISyntaxException {
         List<String> fileList = new ArrayList<>();
 
-        String transformedPath = new URI(path).getPath();
-        Path filePath = rootLocation.resolve(transformedPath);
+        Path filePath = this.getPath(directories);
         File folder = new File(filePath.toString());
 
         if (folder.exists() && folder.isDirectory()) {
@@ -120,5 +119,15 @@ public class FtpStorageServiceImpl implements FileStorageService {
             throw new FileNotFoundException("Could not read file: " + path);
         }
         return resource;
+    }
+
+    private Path getPath(String[] directory) throws URISyntaxException {
+        StringBuilder path = new StringBuilder();
+        for (String s : directory) {
+            path.append("/").append(s);
+        }
+        path.append("/");
+        String transformedPath = new URI(path.toString()).getPath();
+        return Paths.get(this.rootLocation.toString(), transformedPath);
     }
 }
