@@ -1,11 +1,8 @@
 package com.example.twentyfivemediamanager.controller;
 
-import com.example.twentyfivemediamanager.exceptions.FileDeleteException;
 import com.example.twentyfivemediamanager.exceptions.FileDownloadException;
-import com.example.twentyfivemediamanager.exceptions.FileUploadException;
 import com.example.twentyfivemediamanager.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.catalina.webresources.FileResource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -15,6 +12,7 @@ import org.springframework.core.io.Resource;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.Optional;
@@ -75,22 +73,21 @@ public class FileController {
     }
 
     @GetMapping("/movekkk")
-    public ResponseEntity<String> moveFile(@RequestParam("source") String source, @RequestParam("target") String target) {
+    public ResponseEntity<String> moveFile(@RequestParam("source") String source, @RequestParam("target") String target, HttpServletRequest request) {
         try {
 
-            Path rootLocation = Paths.get(fileStorageLocation);
-            Path sourcePath = rootLocation.resolve(source);
-            Path targetPath = rootLocation.resolve(target);
+            String[] sourceSplit = source.split("/");
+            String[] targetSplit = target.split("/");
+
+            Path sourcePath = getPath(sourceSplit);
+            Path targetPath = getPath(targetSplit);
 
             // Verifica se il file esiste
             if (!Files.exists(sourcePath)) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file not found: " + source);
             }
 
-            // Crea le directory di destinazione se non esistono
             Files.createDirectories(targetPath.getParent());
-
-            // Sposta il file
             Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             return ResponseEntity.ok("File moved successfully from " + source + " to " + target);
@@ -128,6 +125,18 @@ public class FileController {
         }
     }
 
+
+    private Path getPath(String[] sourceSplit) throws URISyntaxException {
+        Path rootLocation = Paths.get(this.fileStorageLocation);
+
+        StringBuilder sourcePath = new StringBuilder(rootLocation.toString());
+        for (String dir : sourceSplit) {
+            sourcePath.append("/").append(dir);
+        }
+
+        String transformedSourcePath = new URI(sourcePath.toString()).getPath();
+        return rootLocation.resolve(transformedSourcePath);
+    }
 
 
 }
