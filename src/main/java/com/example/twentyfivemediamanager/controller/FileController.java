@@ -3,6 +3,7 @@ package com.example.twentyfivemediamanager.controller;
 import com.example.twentyfivemediamanager.exceptions.FileDownloadException;
 import com.example.twentyfivemediamanager.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -23,6 +24,7 @@ import java.util.Optional;
 
 @RestController
 @CrossOrigin("*")
+@Slf4j
 @RequestMapping("/twentyfiveserver")
 public class FileController {
 
@@ -36,7 +38,9 @@ public class FileController {
     public ResponseEntity<Resource> downloadFile(@PathVariable String path, HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
+            log.info("Downloading Full path: " + fullPath);
             String[] pathSegments = fullPath.split("/downloadkkk/");
+            log.info("Downloading Path segments: " + pathSegments);
             String fileName = pathSegments[pathSegments.length - 1];
             String[] dividedPath = fileName.split("/");
             String finalFileName = dividedPath[dividedPath.length - 1];
