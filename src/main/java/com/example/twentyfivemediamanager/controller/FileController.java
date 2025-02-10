@@ -112,6 +112,35 @@ public class FileController {
         return ResponseEntity.ok(fileStorageService.getFiles(allStrings));
     }
 
+    @GetMapping("/renamekkk")
+    public ResponseEntity<String> renameFile(@RequestParam("source") String source, @RequestParam("target") String target, HttpServletRequest request) {
+        try {
+            String[] sourceSplit = source.split("/");
+            String[] targetSplit = target.split("/");
+
+            Path sourcePath = getPath(sourceSplit);
+            Path targetPath = getPath(targetSplit);
+
+            // Verifica se il file esiste
+            if (!Files.exists(sourcePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file not found: " + source);
+            }
+
+            Files.createDirectories(targetPath.getParent());
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return ResponseEntity.ok("File renamed successfully from " + source + " to " + target);
+        } catch (NoSuchFileException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file does not exist: " + source);
+        } catch (FileAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Target file already exists: " + target);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("I/O error while renaming file: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
+        }
+    }
+
 
     @DeleteMapping("/deletekkk/{path}/**")
     public ResponseEntity<String> deleteFile(@PathVariable String path, HttpServletRequest request) {
