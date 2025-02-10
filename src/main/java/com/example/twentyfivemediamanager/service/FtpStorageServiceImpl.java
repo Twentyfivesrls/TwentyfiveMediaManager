@@ -119,7 +119,7 @@ public class FtpStorageServiceImpl implements FileStorageService {
         Resource resource = new UrlResource(file.toUri());
         log.info("Resource exists: " + resource.exists());
         log.info("Resource is readable: " + resource.isReadable());
-        if (!resource.exists() || !resource.isReadable()) {
+        if (!resource.exists()) {
             throw new FileNotFoundException("Could not read file: " + path);
         }
         return resource;
