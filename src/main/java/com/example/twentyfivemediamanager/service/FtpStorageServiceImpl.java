@@ -1,5 +1,6 @@
 package com.example.twentyfivemediamanager.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Slf4j
 public class FtpStorageServiceImpl implements FileStorageService {
 
     @Value("${ftp.server}")
@@ -113,8 +115,9 @@ public class FtpStorageServiceImpl implements FileStorageService {
     public Resource loadFileAsResource(String path) throws IOException, URISyntaxException {
         String transformedPath = new URI(path).getPath();
         Path file = rootLocation.resolve(transformedPath);
+        log.info("File path: " + file.toString());
         Resource resource = new UrlResource(file.toUri());
-
+        log.info("Resource exists: " + resource.exists());
         if (!resource.exists() || !resource.isReadable()) {
             throw new FileNotFoundException("Could not read file: " + path);
         }

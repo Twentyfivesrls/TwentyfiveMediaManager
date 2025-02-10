@@ -18,6 +18,7 @@ import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,12 +41,10 @@ public class FileController {
             String fullPath = request.getRequestURI();
             log.info("Downloading Full path: " + fullPath);
             String[] pathSegments = fullPath.split("/downloadkkk/");
-            log.info("Downloading Path segments: " + pathSegments);
+            log.info("Downloading Path segments: " + Arrays.toString(pathSegments));
             String fileName = pathSegments[pathSegments.length - 1];
             String[] dividedPath = fileName.split("/");
             String finalFileName = dividedPath[dividedPath.length - 1];
-            String[] dividedFileName = finalFileName.split("\\.");
-            String extension = dividedFileName[dividedFileName.length - 1];
             Resource resource = fileStorageService.loadFileAsResource(fileName);
             Optional<MediaType> mediaType = MediaTypeFactory.getMediaType(finalFileName);
             MediaType resu = mediaType.orElse(MediaType.APPLICATION_OCTET_STREAM);
