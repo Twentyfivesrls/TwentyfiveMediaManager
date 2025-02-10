@@ -72,7 +72,7 @@ public class FileController {
         }
     }
 
-    @GetMapping("/movekkk")
+    @GetMapping("/copykkk")
     public ResponseEntity<String> moveFile(@RequestParam("source") String source, @RequestParam("target") String target, HttpServletRequest request) {
         try {
 
@@ -90,7 +90,7 @@ public class FileController {
             Files.createDirectories(targetPath.getParent());
             Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            return ResponseEntity.ok("File moved successfully from " + source + " to " + target);
+            return ResponseEntity.ok("File copied successfully from " + source + " to " + target);
         } catch (NoSuchFileException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file does not exist: " + source);
         } catch (FileAlreadyExistsException e) {
