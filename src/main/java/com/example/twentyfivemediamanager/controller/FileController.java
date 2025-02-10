@@ -7,6 +7,7 @@ import com.example.twentyfivemediamanager.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.catalina.webresources.FileResource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,7 +16,7 @@ import org.springframework.core.io.Resource;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.*;
 import java.util.Optional;
 
 
@@ -26,6 +27,9 @@ public class FileController {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    @Value("${file.storage.location}")
+    private String fileStorageLocation;
 
     @GetMapping("/downloadkkk/{path}/**")
     public ResponseEntity<Resource> downloadFile(@PathVariable String path, HttpServletRequest request) {
@@ -70,8 +74,36 @@ public class FileController {
         }
     }
 
+    @GetMapping("/movekkk")
+    public ResponseEntity<String> moveFile(@RequestParam("source") String source, @RequestParam("target") String target) {
+        try {
 
+            Path rootLocation = Paths.get(fileStorageLocation);
+            Path sourcePath = rootLocation.resolve(source);
+            Path targetPath = rootLocation.resolve(target);
 
+            // Verifica se il file esiste
+            if (!Files.exists(sourcePath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file not found: " + source);
+            }
+
+            // Crea le directory di destinazione se non esistono
+            Files.createDirectories(targetPath.getParent());
+
+            // Sposta il file
+            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return ResponseEntity.ok("File moved successfully from " + source + " to " + target);
+        } catch (NoSuchFileException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file does not exist: " + source);
+        } catch (FileAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Target file already exists: " + target);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("I/O error while moving file: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
+        }
+    }
 
 
     @DeleteMapping("/deletekkk/{path}/**")
