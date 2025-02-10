@@ -104,7 +104,7 @@ public class FileController {
     }
 
     @GetMapping("/infokkk/{path}")
-    public ResponseEntity<List<String>> getInfo(@PathVariable String path) {
+    public ResponseEntity<List<String>> getInfo(@PathVariable String path) throws URISyntaxException {
         //return all the files in the directory
         return ResponseEntity.ok(fileStorageService.getFiles(path));
     }
