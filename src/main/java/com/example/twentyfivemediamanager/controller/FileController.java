@@ -46,8 +46,11 @@ public class FileController {
             String[] dividedPath = fileName.split("/");
             String finalFileName = dividedPath[dividedPath.length - 1];
             Resource resource = fileStorageService.loadFileAsResource(fileName);
+            log.info("Resource loaded!");
             Optional<MediaType> mediaType = MediaTypeFactory.getMediaType(finalFileName);
+            log.info("Media type is Present? " + mediaType.isPresent());
             MediaType resu = mediaType.orElse(MediaType.APPLICATION_OCTET_STREAM);
+            log.info("Media type: " + resu);
             return ResponseEntity.ok()
                     .contentType(resu)
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + finalFileName + "\"")
