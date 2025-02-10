@@ -88,7 +88,7 @@ public class FileController {
             }
 
             Files.createDirectories(targetPath.getParent());
-            Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             return ResponseEntity.ok("File moved successfully from " + source + " to " + target);
         } catch (NoSuchFileException e) {
