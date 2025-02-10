@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -100,6 +101,12 @@ public class FileController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/infokkk/{path}")
+    public ResponseEntity<List<String>> getInfo(@PathVariable String path) {
+        //return all the files in the directory
+        return ResponseEntity.ok(fileStorageService.getFiles(path));
     }
 
 

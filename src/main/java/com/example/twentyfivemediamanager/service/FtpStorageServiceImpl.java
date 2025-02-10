@@ -6,11 +6,14 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class FtpStorageServiceImpl implements FileStorageService {
@@ -37,6 +40,27 @@ public class FtpStorageServiceImpl implements FileStorageService {
     @Override
     public void init() throws IOException {
         Files.createDirectories(rootLocation);
+    }
+
+    @Override
+    public List<String> getFiles(String path) {
+        List<String> fileList = new ArrayList<>();
+
+        File folder = new File(path);
+
+        if (folder.exists() && folder.isDirectory()) {
+            File[] files = folder.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {  // Ensure it's a file, not a directory
+                        fileList.add(file.getName());
+                    }
+                }
+            }
+        }
+
+        return fileList;
+
     }
 
     @Override
