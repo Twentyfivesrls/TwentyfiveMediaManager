@@ -64,12 +64,15 @@ public class FileController {
 
 
     @PostMapping("/uploadkkk/{path}/**")
-    public ResponseEntity<String> uploadFile(@PathVariable String path, @RequestParam("file") MultipartFile file, HttpServletRequest request) {
+    public ResponseEntity<String> uploadFile(@PathVariable String path,
+                                             @RequestParam("file") MultipartFile file,
+                                             @RequestParam(name = "strategy", defaultValue = "APPEND", required = false) String strategy,
+                                             HttpServletRequest request) {
         try {
             String fullPath = request.getRequestURI();
             String[] pathSegments = fullPath.split("/uploadkkk/");
             String[] allStrings = pathSegments[1].split("/");
-            String fileName = fileStorageService.storeFile(allStrings, file);
+            String fileName = fileStorageService.storeFile(allStrings, file, strategy);
             return ResponseEntity.ok().body(fileName);
         } catch (FileAlreadyExistsException e) {
             // Gestione specifica del caso in cui il file esiste già

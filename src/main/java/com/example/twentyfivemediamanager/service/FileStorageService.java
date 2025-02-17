@@ -10,7 +10,7 @@ import java.util.List;
 
 
 public interface FileStorageService {
-    String storeFile(String[] directory, MultipartFile file) throws IOException, URISyntaxException;
+    String storeFile(String[] directory, MultipartFile file, String strategy) throws IOException, URISyntaxException;
     Resource loadFileAsResource(String fileName) throws IOException, URISyntaxException;
     void deleteFile(String[] allStrings) throws IOException, URISyntaxException;
 
