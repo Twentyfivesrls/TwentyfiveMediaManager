@@ -21,6 +21,7 @@ import java.nio.file.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 
 @RestController
@@ -83,6 +84,41 @@ public class FileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred while uploading file: " + file.getOriginalFilename());
         }
     }
+
+    @DeleteMapping("/delete-folderkkk")
+    public ResponseEntity<String> deleteFolder(@RequestParam("target") String target) {
+        try {
+            String[] targetSplit = target.split("/");
+
+            Path targetPath = getPath(targetSplit);
+
+            if (!Files.exists(targetPath)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Folder not found: " + targetPath);
+            }
+
+            // Cancella ricorsivamente la cartella e i suoi contenuti
+            deleteDirectoryRecursively(targetPath);
+
+            return ResponseEntity.ok("Folder deleted successfully: " + targetPath);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting folder: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
+        }
+    }
+
+    // Metodo per eliminare cartelle e file ricorsivamente
+    private void deleteDirectoryRecursively(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            try (Stream<Path> paths = Files.list(path)) {
+                for (Path file : paths.toList()) {
+                    deleteDirectoryRecursively(file);
+                }
+            }
+        }
+        Files.delete(path); // Elimina file o cartella vuota
+    }
+
 
     @GetMapping("/copykkk")
     public ResponseEntity<String> moveFile(@RequestParam("source") String source, @RequestParam("target") String target, HttpServletRequest request) {
