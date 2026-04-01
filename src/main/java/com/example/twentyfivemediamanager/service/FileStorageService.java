@@ -13,9 +13,6 @@ public interface FileStorageService {
     String storeFile(String[] directory, MultipartFile file, String strategy) throws IOException, URISyntaxException;
     Resource loadFileAsResource(String fileName) throws IOException, URISyntaxException;
     void deleteFile(String[] allStrings) throws IOException, URISyntaxException;
-
-    void init() throws IOException;
-
-    List<String> getFiles(String[] path) throws URISyntaxException;
+    List<String> getFiles(String[] path) throws IOException, URISyntaxException;
 }
 

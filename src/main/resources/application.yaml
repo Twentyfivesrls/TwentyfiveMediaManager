@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: prod
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+file:
+  storage:
+    location: /opt/app/files
+
+ftp:
+  server: localhost
+  port: 21
+  username: ""
+  password: ""

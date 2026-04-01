@@ -1,0 +1,35 @@
+app:
+  file-security:
+    storage-root: /opt/app/files
+    max-upload-size-bytes: 10485760
+
+    allowed-content-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+      - application/pdf
+
+    allowed-origins:
+      - "https://app-a.example.com"
+      - "https://admin-a.example.com"
+      - "https://app-b.example.com"
+      - "https://fidelity25.it"
+
+    root-policies:
+      - root: "A"
+        origins:
+          - "https://app-a.example.com"
+          - "https://admin-a.example.com"
+
+      - root: "B"
+        origins:
+          - "https://app-b.example.com"
+      - root: "twentyfive-fidelity"
+        origins:
+          - "https://fidelity25.it"
+
+logging:
+  level:
+    root: INFO
+    com.example.twentyfivemediamanager: DEBUG
+    org.springframework.security: INFO

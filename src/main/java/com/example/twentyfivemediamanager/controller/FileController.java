@@ -1,230 +1,337 @@
 package com.example.twentyfivemediamanager.controller;
 
+import com.example.twentyfivemediamanager.exceptions.FileDeleteException;
 import com.example.twentyfivemediamanager.exceptions.FileDownloadException;
+import com.example.twentyfivemediamanager.exceptions.FileOperationException;
+import com.example.twentyfivemediamanager.exceptions.FileUploadException;
+import com.example.twentyfivemediamanager.security.PathOperationValidator;
+import com.example.twentyfivemediamanager.security.SecurePathResolver;
 import com.example.twentyfivemediamanager.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
-
 
 @RestController
-@CrossOrigin("*")
 @Slf4j
+@RequiredArgsConstructor
 @RequestMapping("/twentyfiveserver")
 public class FileController {
 
-    @Autowired
-    private FileStorageService fileStorageService;
+    private static final String DOWNLOAD_MARKER = "/downloadkkk/";
+    private static final String UPLOAD_MARKER = "/uploadkkk/";
+    private static final String DELETE_MARKER = "/deletekkk/";
+    private static final String INFO_MARKER = "/infokkk/";
 
-    @Value("${file.storage.location}")
-    private String fileStorageLocation;
+    private final FileStorageService fileStorageService;
+    private final SecurePathResolver securePathResolver;
+    private final PathOperationValidator pathOperationValidator;
 
     @GetMapping("/downloadkkk/{path}/**")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String path, HttpServletRequest request) {
+    public ResponseEntity<Resource> downloadFile(@PathVariable String path, HttpServletRequest request) throws FileNotFoundException {
         try {
-            String fullPath = request.getRequestURI();
-            log.info("Downloading Full path: " + fullPath);
-            String[] pathSegments = fullPath.split("/downloadkkk/");
-            log.info("Downloading Path segments: " + Arrays.toString(pathSegments));
-            String fileName = pathSegments[pathSegments.length - 1];
-            String[] dividedPath = fileName.split("/");
-            String finalFileName = dividedPath[dividedPath.length - 1];
-            Resource resource = fileStorageService.loadFileAsResource(fileName);
-            log.info("Resource loaded!");
-            Optional<MediaType> mediaType = MediaTypeFactory.getMediaType(finalFileName);
-            log.info("Media type is Present? " + mediaType.isPresent());
-            MediaType resu = mediaType.orElse(MediaType.APPLICATION_OCTET_STREAM);
-            log.info("Media type: " + resu);
+            String relativePath = extractRelativePathFromUri(request, DOWNLOAD_MARKER);
+            String finalFileName = extractFileName(relativePath);
+
+            Resource resource = fileStorageService.loadFileAsResource(relativePath);
+            MediaType mediaType = MediaTypeFactory.getMediaType(finalFileName)
+                    .orElse(MediaType.APPLICATION_OCTET_STREAM);
+
+            log.info("File download accepted. uri={}, filename={}", request.getRequestURI(), finalFileName);
+
             return ResponseEntity.ok()
-                    .contentType(resu)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + finalFileName + "\"")
+                    .contentType(mediaType)
+                    .header(
+                            HttpHeaders.CONTENT_DISPOSITION,
+                            ContentDisposition.inline().filename(finalFileName).build().toString()
+                    )
                     .body(resource);
-        } catch (IOException e) {
-            throw new FileDownloadException("Failed to download file: " + path, e);
-        } catch (Exception exception) {
-            throw new FileDownloadException("Unexpected error occurred while downloading file: " + path, exception);
+
+        } catch (FileNotFoundException | SecurityException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new FileDownloadException("Failed to download file: " + path, ex);
+        } catch (Exception ex) {
+            throw new FileDownloadException("Unexpected error occurred while downloading file: " + path, ex);
         }
     }
 
-
-    @PostMapping("/uploadkkk/{path}/**")
+    @org.springframework.web.bind.annotation.PostMapping("/uploadkkk/{path}/**")
     public ResponseEntity<String> uploadFile(@PathVariable String path,
                                              @RequestParam("file") MultipartFile file,
                                              @RequestParam(name = "strategy", defaultValue = "APPEND", required = false) String strategy,
-                                             HttpServletRequest request) {
+                                             HttpServletRequest request) throws FileNotFoundException {
         try {
-            String fullPath = request.getRequestURI();
-            String[] pathSegments = fullPath.split("/uploadkkk/");
-            String[] allStrings = pathSegments[1].split("/");
-            String fileName = fileStorageService.storeFile(allStrings, file, strategy);
-            return ResponseEntity.ok().body(fileName);
-        } catch (FileAlreadyExistsException e) {
-            // Gestione specifica del caso in cui il file esiste già
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        } catch (IOException | URISyntaxException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file: " + file.getOriginalFilename());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred while uploading file: " + file.getOriginalFilename());
+            String relativePath = extractRelativePathFromUri(request, UPLOAD_MARKER);
+            String[] pathSegments = splitRelativePath(relativePath);
+
+            String storedFileName = fileStorageService.storeFile(pathSegments, file, strategy);
+
+            log.info("File upload accepted. uri={}, filename={}, strategy={}",
+                    request.getRequestURI(), storedFileName, strategy);
+
+            return ResponseEntity.ok(storedFileName);
+
+        } catch (FileNotFoundException | SecurityException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new FileUploadException("Failed to upload file: " + safeOriginalFilename(file), ex);
+        } catch (Exception ex) {
+            throw new FileUploadException("Unexpected error occurred while uploading file: " + safeOriginalFilename(file), ex);
         }
     }
 
     @DeleteMapping("/delete-folderkkk")
-    public ResponseEntity<String> deleteFolder(@RequestParam("target") String target) {
+    public ResponseEntity<String> deleteFolder(@RequestParam("target") String target) throws FileNotFoundException {
         try {
-            String[] targetSplit = target.split("/");
+            String normalizedTarget = normalizeInputPath(target);
+            Path resolvedTarget = securePathResolver.resolveRelativePath(normalizedTarget);
 
-            Path targetPath = getPath(targetSplit);
-
-            if (!Files.exists(targetPath)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Folder not found: " + targetPath);
+            String root = pathOperationValidator.extractRoot(normalizedTarget);
+            if (!StringUtils.hasText(root)) {
+                throw new SecurityException("Invalid target path");
             }
 
-            // Cancella ricorsivamente la cartella e i suoi contenuti
-            deleteDirectoryRecursively(targetPath);
-
-            return ResponseEntity.ok("Folder deleted successfully: " + targetPath);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting folder: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
-        }
-    }
-
-    // Metodo per eliminare cartelle e file ricorsivamente
-    private void deleteDirectoryRecursively(Path path) throws IOException {
-        if (Files.isDirectory(path)) {
-            try (Stream<Path> paths = Files.list(path)) {
-                for (Path file : paths.toList()) {
-                    deleteDirectoryRecursively(file);
-                }
+            if (isRootDeletion(normalizedTarget, root)) {
+                throw new SecurityException("Deleting a root folder is not allowed");
             }
-        }
-        Files.delete(path); // Elimina file o cartella vuota
-    }
 
+            if (!Files.exists(resolvedTarget)) {
+                throw new FileNotFoundException("Folder not found");
+            }
+
+            if (!Files.isDirectory(resolvedTarget)) {
+                throw new IllegalArgumentException("Target is not a directory");
+            }
+
+            deleteDirectoryRecursively(resolvedTarget);
+
+            log.info("Folder deleted successfully. target={}", normalizedTarget);
+            return ResponseEntity.ok("Folder deleted successfully");
+
+        } catch (FileNotFoundException | SecurityException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new FileDeleteException("Failed to delete folder: " + target, ex);
+        } catch (Exception ex) {
+            throw new FileDeleteException("Unexpected error occurred while deleting folder: " + target, ex);
+        }
+    }
 
     @GetMapping("/copykkk")
-    public ResponseEntity<String> moveFile(@RequestParam("source") String source, @RequestParam("target") String target, HttpServletRequest request) {
+    public ResponseEntity<String> copyFile(@RequestParam("source") String source,
+                                           @RequestParam("target") String target) throws FileNotFoundException {
         try {
+            String normalizedSource = normalizeInputPath(source);
+            String normalizedTarget = normalizeInputPath(target);
 
-            String[] sourceSplit = source.split("/");
-            String[] targetSplit = target.split("/");
+            pathOperationValidator.validateSameAuthorizedRoot(normalizedSource, normalizedTarget);
 
-            Path sourcePath = getPath(sourceSplit);
-            Path targetPath = getPath(targetSplit);
+            Path sourcePath = securePathResolver.resolveRelativePath(normalizedSource);
+            Path targetPath = securePathResolver.resolveRelativePath(normalizedTarget);
 
-            // Verifica se il file esiste
             if (!Files.exists(sourcePath)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file not found: " + source);
+                throw new FileNotFoundException("Source file not found");
+            }
+
+            if (!Files.isRegularFile(sourcePath)) {
+                throw new IllegalArgumentException("Source path is not a file");
             }
 
             Files.createDirectories(targetPath.getParent());
             Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            return ResponseEntity.ok("File copied successfully from " + source + " to " + target);
-        } catch (NoSuchFileException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file does not exist: " + source);
-        } catch (FileAlreadyExistsException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Target file already exists: " + target);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("I/O error while moving file: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
+            log.info("File copied successfully. source={}, target={}", normalizedSource, normalizedTarget);
+            return ResponseEntity.ok("File copied successfully");
+
+        } catch (FileNotFoundException | SecurityException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new FileOperationException("Failed to copy file", ex);
+        } catch (Exception ex) {
+            throw new FileOperationException("Unexpected error occurred while copying file", ex);
         }
     }
 
     @GetMapping("/infokkk/{path}/**")
-    public ResponseEntity<List<String>> getInfo(@PathVariable String path, HttpServletRequest request) throws URISyntaxException {
-        //return all the files in the directory
-        String fullPath = request.getRequestURI();
-        String[] pathSegments = fullPath.split("/infokkk/");
-        String[] allStrings = pathSegments[1].split("/");
-        return ResponseEntity.ok(fileStorageService.getFiles(allStrings));
+    public ResponseEntity<List<String>> getInfo(@PathVariable String path, HttpServletRequest request) throws FileNotFoundException {
+        try {
+            String relativePath = extractRelativePathFromUri(request, INFO_MARKER);
+            String[] pathSegments = splitRelativePath(relativePath);
+
+            List<String> files = fileStorageService.getFiles(pathSegments);
+
+            log.info("Directory info retrieved. uri={}", request.getRequestURI());
+            return ResponseEntity.ok(files);
+
+        } catch (FileNotFoundException | SecurityException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new FileOperationException("Failed to retrieve directory info", ex);
+        } catch (Exception ex) {
+            throw new FileOperationException("Unexpected error occurred while retrieving directory info", ex);
+        }
     }
 
     @GetMapping("/renamekkk")
-    public ResponseEntity<String> renameFile(@RequestParam("source") String source, @RequestParam("target") String target, HttpServletRequest request) {
+    public ResponseEntity<String> renameFile(@RequestParam("source") String source,
+                                             @RequestParam("target") String target) throws FileNotFoundException {
         try {
-            source = URLDecoder.decode(source, StandardCharsets.UTF_8);
-            String[] sourceSplit = source.split("/");
-            String[] targetSplit = target.split("/");
+            String normalizedSource = normalizeInputPath(source);
+            String normalizedTarget = normalizeInputPath(target);
 
-            Path sourcePath = getPath(sourceSplit);
-            Path targetPath = getPath(targetSplit);
+            pathOperationValidator.validateSameAuthorizedRoot(normalizedSource, normalizedTarget);
 
-            // Verifica se il file esiste
+            Path sourcePath = securePathResolver.resolveRelativePath(normalizedSource);
+            Path targetPath = securePathResolver.resolveRelativePath(normalizedTarget);
+
             if (!Files.exists(sourcePath)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file not found: " + source);
+                throw new FileNotFoundException("Source file not found");
+            }
+
+            if (!Files.isRegularFile(sourcePath)) {
+                throw new IllegalArgumentException("Source path is not a file");
             }
 
             Files.createDirectories(targetPath.getParent());
             Files.move(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
-            return ResponseEntity.ok("File renamed successfully from " + source + " to " + target);
-        } catch (NoSuchFileException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Source file does not exist: " + source);
-        } catch (FileAlreadyExistsException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Target file already exists: " + target);
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("I/O error while renaming file: " + e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error: " + e.getMessage());
+            log.info("File renamed successfully. source={}, target={}", normalizedSource, normalizedTarget);
+            return ResponseEntity.ok("File renamed successfully");
+
+        } catch (FileNotFoundException | SecurityException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new FileOperationException("Failed to rename file", ex);
+        } catch (Exception ex) {
+            throw new FileOperationException("Unexpected error occurred while renaming file", ex);
         }
     }
-
 
     @DeleteMapping("/deletekkk/{path}/**")
-    public ResponseEntity<String> deleteFile(@PathVariable String path, HttpServletRequest request) {
+    public ResponseEntity<String> deleteFile(@PathVariable String path, HttpServletRequest request) throws FileNotFoundException {
         try {
-            String fullPath = request.getRequestURI();
-            String[] pathSegments = fullPath.split("/deletekkk/");
-            String[] allStrings = pathSegments[1].split("/");
+            String relativePath = extractRelativePathFromUri(request, DELETE_MARKER);
+            String[] pathSegments = splitRelativePath(relativePath);
 
-            // Chiamata al servizio per eliminare il file
-            fileStorageService.deleteFile(allStrings);
-            return ResponseEntity.ok().body("File deleted successfully");
-        } catch (FileNotFoundException e) {
-            // Restituisce un errore 404 se il file non è stato trovato
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found: " + path);
-        } catch (IOException e) {
-            // Restituisce un errore 500 per problemi legati al filesystem
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting file: " + path);
-        } catch (Exception e) {
-            // Restituisce un errore generico per altre eccezioni inattese
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Unexpected error occurred while deleting file: " + path);
+            fileStorageService.deleteFile(pathSegments);
+
+            log.info("File deleted successfully. uri={}", request.getRequestURI());
+            return ResponseEntity.ok("File deleted successfully");
+
+        } catch (FileNotFoundException | SecurityException | IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new FileDeleteException("Error deleting file: " + path, ex);
+        } catch (Exception ex) {
+            throw new FileDeleteException("Unexpected error occurred while deleting file: " + path, ex);
         }
     }
 
+    private String extractRelativePathFromUri(HttpServletRequest request, String marker) {
+        String requestUri = request.getRequestURI();
+        int markerIndex = requestUri.indexOf(marker);
 
-    private Path getPath(String[] sourceSplit) throws URISyntaxException {
-        Path rootLocation = Paths.get(this.fileStorageLocation);
-
-        StringBuilder sourcePath = new StringBuilder(rootLocation.toString());
-        for (String dir : sourceSplit) {
-            sourcePath.append("/").append(dir);
+        if (markerIndex < 0) {
+            throw new IllegalArgumentException("Invalid request URI");
         }
 
-        String transformedSourcePath = new URI(sourcePath.toString()).getPath();
-        return rootLocation.resolve(transformedSourcePath);
+        String relativePath = requestUri.substring(markerIndex + marker.length());
+        relativePath = URLDecoder.decode(relativePath, StandardCharsets.UTF_8);
+        relativePath = normalizeInputPath(relativePath);
+
+        if (!StringUtils.hasText(relativePath)) {
+            throw new IllegalArgumentException("Missing relative path");
+        }
+
+        return relativePath;
     }
 
+    private String[] splitRelativePath(String relativePath) {
+        String normalized = normalizeInputPath(relativePath);
+        if (!StringUtils.hasText(normalized)) {
+            return new String[0];
+        }
+        return normalized.split("/");
+    }
 
+    private String normalizeInputPath(String value) {
+        if (value == null) {
+            throw new IllegalArgumentException("Path is required");
+        }
+
+        String normalized = URLDecoder.decode(value, StandardCharsets.UTF_8);
+        normalized = normalized.replace("\\", "/").trim();
+
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+
+        while (normalized.endsWith("/") && normalized.length() > 1) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+
+        if (!StringUtils.hasText(normalized)) {
+            throw new IllegalArgumentException("Invalid path");
+        }
+
+        return normalized;
+    }
+
+    private String extractFileName(String relativePath) {
+        String normalized = normalizeInputPath(relativePath);
+        int lastSlashIndex = normalized.lastIndexOf('/');
+        return lastSlashIndex >= 0 ? normalized.substring(lastSlashIndex + 1) : normalized;
+    }
+
+    private boolean isRootDeletion(String normalizedTarget, String root) {
+        return normalizedTarget.equals(root);
+    }
+
+    private void deleteDirectoryRecursively(Path targetPath) throws IOException {
+        try (var walk = Files.walk(targetPath)) {
+            walk.sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    });
+        } catch (RuntimeException ex) {
+            if (ex.getCause() instanceof IOException ioException) {
+                throw ioException;
+            }
+            throw ex;
+        }
+    }
+
+    private String safeOriginalFilename(MultipartFile file) {
+        return file != null && file.getOriginalFilename() != null
+                ? file.getOriginalFilename()
+                : "unknown";
+    }
 }
-
