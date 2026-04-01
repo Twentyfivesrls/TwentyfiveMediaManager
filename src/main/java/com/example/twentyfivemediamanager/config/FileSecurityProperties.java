@@ -23,9 +23,7 @@ public class FileSecurityProperties {
 
     private List<String> allowedContentTypes = new ArrayList<>();
 
-    private List<String> allowedOrigins = new ArrayList<>();
-
-    private List<RootPolicy> rootPolicies = new ArrayList<>();
+    private List<CallerPolicy> callerPolicies = new ArrayList<>();
 
     public Path storageRootPath() {
         return Path.of(storageRoot).normalize().toAbsolutePath();
@@ -33,8 +31,11 @@ public class FileSecurityProperties {
 
     @Getter
     @Setter
-    public static class RootPolicy {
-        private String root;
-        private List<String> origins = new ArrayList<>();
+    public static class CallerPolicy {
+
+        @NotBlank
+        private String caller;
+
+        private List<String> roots = new ArrayList<>();
     }
 }

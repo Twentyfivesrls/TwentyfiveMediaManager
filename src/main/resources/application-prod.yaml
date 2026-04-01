@@ -15,19 +15,14 @@ app:
       - "https://app-b.example.com"
       - "https://fidelity25.it"
 
-    root-policies:
-      - root: "A"
-        origins:
-          - "https://app-a.example.com"
-          - "https://admin-a.example.com"
+    caller-policies:
+      - caller: "fidelity25.it"
+        roots:
+          - "twentyfive-fidelity"
 
-      - root: "B"
-        origins:
-          - "https://app-b.example.com"
-      - root: "twentyfive-fidelity"
-        origins:
-          - "https://fidelity25.it"
-
+      - caller: "admin.fidelity25.it"
+        roots:
+          - "twentyfive-fidelity"
 logging:
   level:
     root: INFO
