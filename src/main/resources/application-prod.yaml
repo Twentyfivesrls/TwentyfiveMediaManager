@@ -17,6 +17,14 @@ app:
       - caller: "anticapasticceriarende.it"
         roots:
           - "apa"
+
+      - caller: "https://anticapasticceriarende.it/"
+        roots:
+          - "apa"
+
+      - caller: "www.anticapasticceriarende.it"
+        roots:
+          - "apa"
 logging:
   level:
     root: INFO
