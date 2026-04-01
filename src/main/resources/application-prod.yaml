@@ -14,12 +14,13 @@ app:
         roots:
           - "twentyfive-fidelity"
 
-      - caller: "80.211.123.141"
+      - caller: "80.211.123.141:8104"
         roots:
           - "apa"
-          - "appCovo"
+
+      - caller: "80.211.123.141:8106"
+        roots:
           - "buste-paga"
-          - "emails"
 logging:
   level:
     root: INFO

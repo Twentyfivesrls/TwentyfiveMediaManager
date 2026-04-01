@@ -15,7 +15,7 @@ public class CallerResolver {
     public String resolveCaller(HttpServletRequest request) {
         String origin = request.getHeader(HttpHeaders.ORIGIN);
         if (hasText(origin)) {
-            String caller = extractHost(origin);
+            String caller = extractHostAndPort(origin);
             if (caller != null) {
                 log.debug("Caller resolved from Origin. origin={}, caller={}", origin, caller);
                 return caller;
@@ -24,7 +24,7 @@ public class CallerResolver {
 
         String referer = request.getHeader(HttpHeaders.REFERER);
         if (hasText(referer)) {
-            String caller = extractHost(referer);
+            String caller = extractHostAndPort(referer);
             if (caller != null) {
                 log.debug("Caller resolved from Referer. referer={}, caller={}", referer, caller);
                 return caller;
@@ -33,22 +33,24 @@ public class CallerResolver {
 
         String forwardedHost = firstHeaderValue(request, "X-Forwarded-Host");
         if (hasText(forwardedHost)) {
-            String caller = normalizeHost(forwardedHost);
+            String caller = normalizeHostAndPort(forwardedHost);
             log.debug("Caller resolved from X-Forwarded-Host. forwardedHost={}, caller={}", forwardedHost, caller);
             return caller;
         }
 
         String host = request.getHeader(HttpHeaders.HOST);
         if (hasText(host)) {
-            String caller = normalizeHost(host);
+            String caller = normalizeHostAndPort(host);
             log.debug("Caller resolved from Host. host={}, caller={}", host, caller);
             return caller;
         }
 
         String serverName = request.getServerName();
+        int serverPort = request.getServerPort();
         if (hasText(serverName)) {
-            String caller = normalizeHost(serverName);
-            log.debug("Caller resolved from serverName. serverName={}, caller={}", serverName, caller);
+            String caller = normalizeHostAndPort(serverName + ":" + serverPort);
+            log.debug("Caller resolved from serverName/serverPort. serverName={}, serverPort={}, caller={}",
+                    serverName, serverPort, caller);
             return caller;
         }
 
@@ -56,29 +58,28 @@ public class CallerResolver {
         return null;
     }
 
-    private String extractHost(String url) {
+    private String extractHostAndPort(String url) {
         try {
             URI uri = URI.create(url);
             String host = uri.getHost();
             if (host == null || host.isBlank()) {
                 return null;
             }
-            return normalizeHost(host);
+
+            int port = uri.getPort();
+            String value = port > 0 ? host + ":" + port : host;
+            return normalizeHostAndPort(value);
         } catch (Exception ex) {
             log.warn("Failed to parse caller URL. url={}", url);
             return null;
         }
     }
 
-    private String normalizeHost(String value) {
+    private String normalizeHostAndPort(String value) {
         String normalized = value.trim().toLowerCase();
 
         if (normalized.contains(",")) {
             normalized = normalized.split(",")[0].trim();
-        }
-
-        if (normalized.contains(":")) {
-            normalized = normalized.split(":")[0].trim();
         }
 
         return normalized;
