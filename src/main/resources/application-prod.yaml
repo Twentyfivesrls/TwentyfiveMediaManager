@@ -14,15 +14,7 @@ app:
         roots:
           - "twentyfive-fidelity"
 
-      - caller: "anticapasticceriarende.it"
-        roots:
-          - "apa"
-
-      - caller: "https://anticapasticceriarende.it/"
-        roots:
-          - "apa"
-
-      - caller: "www.anticapasticceriarende.it"
+      - caller: "80.211.123.141:8104"
         roots:
           - "apa"
 logging:
