@@ -9,20 +9,14 @@ app:
       - image/webp
       - application/pdf
 
-    allowed-origins:
-      - "https://app-a.example.com"
-      - "https://admin-a.example.com"
-      - "https://app-b.example.com"
-      - "https://fidelity25.it"
-
     caller-policies:
       - caller: "fidelity25.it"
         roots:
           - "twentyfive-fidelity"
 
-      - caller: "admin.fidelity25.it"
+      - caller: "anticapasticceriarende.it"
         roots:
-          - "twentyfive-fidelity"
+          - "apa"
 logging:
   level:
     root: INFO
