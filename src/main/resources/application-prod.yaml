@@ -18,6 +18,10 @@ app:
         roots:
           - "buste-paga"
 
+      - caller: "www.paybolt.it"
+        roots:
+          - "buste-paga"
+
       - caller: "80.211.123.141:8106"
         roots:
           - "apa"
