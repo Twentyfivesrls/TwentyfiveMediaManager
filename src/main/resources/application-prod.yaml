@@ -14,15 +14,14 @@ app:
         roots:
           - "twentyfive-fidelity"
 
-      #TODO al momento apa-api-layer è esposta su 8104 invece AURELIO E TEODORO hanno messo hardcoded 8106 che è di paybolt, da sistemare
-      - caller: "80.211.123.141:8104"
+      - caller: "paybolt.it"
         roots:
-          - "apa"
+          - "buste-paga"
 
       - caller: "80.211.123.141:8106"
         roots:
-          - "buste-paga"
           - "apa"
+          - "appCovo"
 logging:
   level:
     root: INFO
