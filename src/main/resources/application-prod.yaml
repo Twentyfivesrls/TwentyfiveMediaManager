@@ -22,7 +22,6 @@ app:
         roots:
           - "apa"
           - "appCovo"
-          - "buste-paga"
 logging:
   level:
     root: INFO
