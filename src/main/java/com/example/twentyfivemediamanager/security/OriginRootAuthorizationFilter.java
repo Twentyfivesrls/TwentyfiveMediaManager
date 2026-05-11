@@ -46,37 +46,31 @@ public class OriginRootAuthorizationFilter extends OncePerRequestFilter {
         String caller = callerResolver.resolveCaller(request);
         String requestedRoot = requestedRootExtractor.extractRequestedRoot(request);
 
-        log.debug("Protected request received. method={}, uri={}, caller={}, requestedRoot={}",
-                method, uri, caller, requestedRoot);
+        log.info("=== AuthFilter: {} {} | caller=[{}] root=[{}]", method, uri, caller, requestedRoot);
 
         if (requestedRoot == null || requestedRoot.isBlank()) {
-            log.warn("Blocked request: requested root missing. method={}, uri={}, caller={}",
-                    method, uri, caller);
+            log.warn(">>> BLOCKED: root mancante. method={}, uri={}, caller={}", method, uri, caller);
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
             return;
         }
 
         if (caller == null || caller.isBlank()) {
-            log.warn("Blocked request: caller unresolved. method={}, uri={}, requestedRoot={}",
-                    method, uri, requestedRoot);
+            log.warn(">>> BLOCKED: caller non risolvibile. method={}, uri={}, root={}", method, uri, requestedRoot);
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
             return;
         }
 
         boolean allowed = callerRootPolicyService.isAllowed(caller, requestedRoot);
 
-        log.debug("Caller/root authorization result. caller={}, requestedRoot={}, allowed={}",
-                caller, requestedRoot, allowed);
+        log.info(">>> POLICY CHECK: caller=[{}] root=[{}] -> {}", caller, requestedRoot, allowed ? "ALLOWED" : "BLOCKED");
 
         if (!allowed) {
-            log.warn("Blocked request: caller not allowed for requested root. method={}, uri={}, caller={}, requestedRoot={}",
-                    method, uri, caller, requestedRoot);
+            log.warn(">>> BLOCKED: caller non autorizzato. method={}, uri={}, caller={}, root={}", method, uri, caller, requestedRoot);
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
             return;
         }
 
-        log.info("Allowed request. method={}, uri={}, caller={}, requestedRoot={}",
-                method, uri, caller, requestedRoot);
+        log.info(">>> ALLOWED: {} {} caller=[{}] root=[{}]", method, uri, caller, requestedRoot);
 
         filterChain.doFilter(request, response);
     }

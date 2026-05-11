@@ -13,48 +13,57 @@ import java.util.List;
 public class CallerResolver {
 
     public String resolveCaller(HttpServletRequest request) {
-        String origin = request.getHeader(HttpHeaders.ORIGIN);
+        String origin        = request.getHeader(HttpHeaders.ORIGIN);
+        String referer       = request.getHeader(HttpHeaders.REFERER);
+        String forwardedHost = firstHeaderValue(request, "X-Forwarded-Host");
+        String host          = request.getHeader(HttpHeaders.HOST);
+        String serverName    = request.getServerName();
+        int    serverPort    = request.getServerPort();
+
+        log.info("=== CallerResolver: incoming headers ===");
+        log.info("  Origin           : {}", origin        != null ? origin        : "<absent>");
+        log.info("  Referer          : {}", referer       != null ? referer       : "<absent>");
+        log.info("  X-Forwarded-Host : {}", forwardedHost != null ? forwardedHost : "<absent>");
+        log.info("  Host             : {}", host          != null ? host          : "<absent>");
+        log.info("  serverName:port  : {}:{}", serverName, serverPort);
+
         if (hasText(origin)) {
             String caller = extractHostAndPort(origin);
             if (caller != null) {
-                log.debug("Caller resolved from Origin. origin={}, caller={}", origin, caller);
+                log.info("  >>> WINNER: Origin -> caller=[{}]", caller);
                 return caller;
             }
+            log.info("  Origin presente ma non parsabile, si continua");
         }
 
-        String referer = request.getHeader(HttpHeaders.REFERER);
         if (hasText(referer)) {
             String caller = extractHostAndPort(referer);
             if (caller != null) {
-                log.debug("Caller resolved from Referer. referer={}, caller={}", referer, caller);
+                log.info("  >>> WINNER: Referer -> caller=[{}]", caller);
                 return caller;
             }
+            log.info("  Referer presente ma non parsabile, si continua");
         }
 
-        String forwardedHost = firstHeaderValue(request, "X-Forwarded-Host");
         if (hasText(forwardedHost)) {
             String caller = normalizeHostAndPort(forwardedHost);
-            log.debug("Caller resolved from X-Forwarded-Host. forwardedHost={}, caller={}", forwardedHost, caller);
+            log.info("  >>> WINNER: X-Forwarded-Host -> caller=[{}]", caller);
             return caller;
         }
 
-        String host = request.getHeader(HttpHeaders.HOST);
         if (hasText(host)) {
             String caller = normalizeHostAndPort(host);
-            log.debug("Caller resolved from Host. host={}, caller={}", host, caller);
+            log.info("  >>> WINNER: Host -> caller=[{}]", caller);
             return caller;
         }
 
-        String serverName = request.getServerName();
-        int serverPort = request.getServerPort();
         if (hasText(serverName)) {
             String caller = normalizeHostAndPort(serverName + ":" + serverPort);
-            log.debug("Caller resolved from serverName/serverPort. serverName={}, serverPort={}, caller={}",
-                    serverName, serverPort, caller);
+            log.info("  >>> WINNER: serverName:port -> caller=[{}]", caller);
             return caller;
         }
 
-        log.debug("Unable to resolve caller from request");
+        log.info("  >>> WINNER: nessuno - caller non risolvibile");
         return null;
     }
 
